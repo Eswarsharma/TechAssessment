@@ -1,0 +1,36 @@
+package com.code.data.models.response.product
+
+
+data class Product(
+    val categoryIds: List<String> = emptyList(),
+    val categoryName: String = "",
+    val customerRating: Double = 0.0,
+    val customerRatingCount: Int = 0,
+    val customerReviewCount: Int = 0,
+    val hasPromotion: Boolean = false,
+    val hideSaleEndDate: Boolean = false,
+    val hideSavings: Boolean = false,
+    val highResImage: String? = null,
+    val isAdvertised: Boolean = false,
+    val isFrenchCompliant: Boolean = false,
+    val isInStoreOnly: Boolean = false,
+    val isMarketplace: Boolean = false,
+    val isOnlineOnly: Boolean = false,
+    val isPreorderable: Boolean = false,
+    val isPriceEndsLabel: Boolean = false,
+    val isVisible: Boolean = false,
+    val name: String = "",
+    val preorderReleaseDate: Long? = null,
+    val priceUnit: String = "",
+    val primaryParentCategoryId: String = "",
+    val productUrl: String = "",
+    val regularPrice: Double = 0.0,
+    val requiresAgeVerification: Boolean = false,
+    val saleEndDate: Long? = null,
+    val salePrice: Double = 0.0,
+    val seller: Seller? = null,
+    val seoText: String = "",
+    val shortDescription: String = "",
+    val sku: String = "",
+    val thumbnailImage: String = ""
+)

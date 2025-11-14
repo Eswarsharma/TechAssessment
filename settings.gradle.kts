@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "TechAssessment"
 include(":app")
+include(":data")
