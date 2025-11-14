@@ -2,4 +2,5 @@
     <string name="app_name">TechAssessment</string>
     <string name="search_best_buy">Search Best Buy</string>
     <string name="welcome">Welcome to Best Buy</string>
+    <string name="no_products_found">No Products Found</string>
 </resources>

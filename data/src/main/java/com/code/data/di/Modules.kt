@@ -1,7 +1,7 @@
 package com.code.data.di
 
 import com.code.data.BuildConfig
-import com.code.data.datasources.remote.ApiService
+import com.code.data.datasources.remote.ProductService
 import com.code.data.repository.product.ProductRepository
 import com.google.gson.GsonBuilder
 import okhttp3.ConnectionPool
@@ -65,7 +65,7 @@ val networkModule = module {
 
     // ApiService
     single {
-        get<Retrofit>().create(ApiService::class.java)
+        get<Retrofit>().create(ProductService::class.java)
     }
 }
 

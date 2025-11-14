@@ -27,6 +27,6 @@ class MainActivity : ComponentActivity() {
 fun App() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Home) {
-        appNavGraph()
+        appNavGraph(navController)
     }
 }

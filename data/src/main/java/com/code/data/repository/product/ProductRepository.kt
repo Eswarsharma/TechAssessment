@@ -1,20 +1,20 @@
 package com.code.data.repository.product
 
-import com.code.data.datasources.remote.ApiService
+import com.code.data.datasources.remote.ProductService
 import java.util.Locale
 
 class ProductRepository(
-    private val apiService: ApiService
+    private val productService: ProductService
 ) {
     val currentLanguage: String = Locale.getDefault().language
 
-    suspend fun searchProduct(query: String, page: Int) = apiService.searchProduct(
+    suspend fun searchProduct(query: String, page: Int) = productService.searchProduct(
         lang = currentLanguage,
         query = query,
         page = page
     )
 
-    suspend fun getProductDetails(id: String) = apiService.getProductDetails(
+    suspend fun getProductDetails(id: String) = productService.getProductDetails(
         id = id,
         lang = currentLanguage
     )

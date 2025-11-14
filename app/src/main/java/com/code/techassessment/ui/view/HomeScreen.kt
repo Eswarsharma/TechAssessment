@@ -1,26 +1,23 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
 
 package com.code.techassessment.ui.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,192 +28,297 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.code.data.models.response.product.Product
 import com.code.techassessment.R
+import com.code.techassessment.navigation.ProductDescription
 import com.code.techassessment.ui.theme.TechAssessmentTheme
 import com.code.techassessment.viewmodel.HomeViewModel
 import com.code.techassessment.viewmodel.SearchResultState
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * State hoisting composable for home screen
+ *
+ * @param viewModel ViewModel for home screen
+ * @param navController NavController for navigation
+ */
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = koinViewModel()
+    viewModel: HomeViewModel = koinViewModel(),
+    navController: NavController = rememberNavController()
 ) {
-    val searchState = viewModel.searchResultState.collectAsState()
+    val searchResultsState = viewModel.searchResultState.collectAsState()
+    val searchQuery = rememberSaveable { MutableStateFlow("") }
+
+    // Since, we don't want to make unnecessary API calls, we debounce the search query
+    LaunchedEffect(searchQuery) {
+        searchQuery
+            .debounce(500.milliseconds)
+            .distinctUntilChanged()
+            .collect { query ->
+                viewModel.searchProduct(query)
+            }
+    }
+
     HomeScreenContent(
-        searchState = searchState.value,
+        searchResultsState = searchResultsState.value,
         onSearch = { query ->
+            searchQuery.value = query
             viewModel.searchProduct(query)
         },
         onLoadMore = {
-            viewModel.searchProduct(query = "", loadMore = true)
+            viewModel.searchProduct(query = searchQuery.value, loadMore = true)
         },
-        onProductSelected = {
-
+        onProductSelected = { productId ->
+            navController.navigate(
+                ProductDescription(productId = productId)
+            )
         }
     )
 }
 
+/**
+ * Composable to display the home screen content
+ *
+ * @param searchResultsState State of search results
+ * @param onSearch Callback to handle search query
+ * @param onLoadMore Callback to load more products
+ * @param onProductSelected Callback to handle product selection
+ */
 @Composable
 fun HomeScreenContent(
-    searchState: SearchResultState,
+    searchResultsState: SearchResultState,
     onSearch: (String) -> Unit,
     onLoadMore: () -> Unit,
     onProductSelected: (productId: String) -> Unit
 ) {
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .background(color = MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                ProductSearchBar(
-                    modifier = Modifier
-                        .padding(
-                            bottom = 15.dp
-                        )
-                        .background(
-                            shape = RoundedCornerShape(2.dp),
-                            color = Color.Transparent
-                        ),
-                    textFieldState = TextFieldState(),
-                    onSearch = onSearch,
-                    onLoadMore = onLoadMore,
-                    searchState = searchState
-                )
-            }
-        },
-        content = { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    stringResource(R.string.welcome),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
-        }
-    )
-}
-
-@Composable
-fun ProductSearchBar(
-    modifier: Modifier = Modifier,
-    textFieldState: TextFieldState,
-    onSearch: (String) -> Unit,
-    onLoadMore: () -> Unit,
-    searchState: SearchResultState
-) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    SearchBar(
-        modifier = modifier,
-        inputField = {
-            SearchBarDefaults.InputField(
-                query = textFieldState.text.toString(),
-                modifier = Modifier.background(
-                    shape = RoundedCornerShape(2.dp),
-                    color = Color.Transparent
-                ),
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.search),
-                        contentDescription = "",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
-                onQueryChange = {
-                    textFieldState.edit {
-                        replace(0, length, it)
-                        onSearch(textFieldState.text.toString())
-                    }
-                },
-                onSearch = {
-                    expanded = false
-                },
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-                placeholder = {
-                    Text(
-                        stringResource(R.string.search_best_buy),
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            )
-        },
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
+    var searchText by rememberSaveable { mutableStateOf("") }
+    Column {
         Box(
             modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .height(150.dp)
+                .background(color = MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.BottomCenter
         ) {
-            when (searchState) {
-                is SearchResultState.Loading -> {
-                    CircularProgressIndicator()
-                }
-
-                is SearchResultState.Success -> {
-                    LazyColumn {
-                        items(searchState.results) { product ->
-                            ListItem(
-                                headlineContent = { Text(product.name) },
-                                modifier = Modifier
-                                    .clickable {
-                                        textFieldState.edit { replace(0, length, product.name) }
-                                        expanded = false
-                                    }
-                                    .fillMaxWidth()
-                            )
-                        }
-
-                        if (searchState.isAppending) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            }
-                        }
+            // Text Field for user to input search query
+            ProductSearchBar(
+                searchText = searchText,
+                onSearchTextChange = {
+                    searchText = it
+                    if (searchText.length >= 3) {
+                        onSearch(it)
                     }
+                })
+        }
 
-                    // Trigger load more when scrolling hits bottom
-                    LaunchedEffect(searchState.results) {
-                        if (!searchState.endReached && !searchState.isAppending) {
-                            onLoadMore()
-                        }
-                    }
-                }
-
-                is SearchResultState.Error -> {
-                    Text("Error: ${searchState.message}")
-                }
-            }
+        // Display welcome message or product list based on search results
+        if (searchText.isEmpty()) {
+            WelcomeMessage()
+        } else {
+            ProductsList(
+                onLoadMore = onLoadMore,
+                searchResultsState = searchResultsState,
+                onProductSelected = onProductSelected
+            )
         }
     }
 }
 
+/**
+ * Composable to display welcome message
+ *
+ * @param message message to display
+ */
+@Composable
+fun WelcomeMessage(
+    message: String = stringResource(R.string.welcome)
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.headlineMedium
+        )
+    }
+}
+
+/**
+ * Composable to Search bar to search products
+ *
+ * @param searchText Current search text
+ * @param onSearchTextChange Callback to handle search text changes
+ */
+@Composable
+fun ProductSearchBar(
+    searchText: String,
+    onSearchTextChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = searchText,
+        onValueChange = onSearchTextChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .background(
+                shape = RoundedCornerShape(5.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer
+            ),
+        singleLine = true,
+        placeholder = {
+            Text(
+                stringResource(R.string.search_best_buy),
+                modifier = Modifier.padding(start = 5.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.LightGray
+            )
+        },
+        leadingIcon = {
+            Icon(
+                painter = painterResource(id = R.drawable.search),
+                contentDescription = "",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        shape = RoundedCornerShape(5.dp)
+    )
+}
+
+/**
+ * Composable to display list of products
+ *
+ * @param onLoadMore Callback to load more products
+ * @param searchResultsState State of search results
+ * @param onProductSelected Callback to handle product selection
+ */
+@Composable
+fun ProductsList(
+    onLoadMore: () -> Unit,
+    searchResultsState: SearchResultState,
+    onProductSelected: (productId: String) -> Unit
+) {
+    when (searchResultsState) {
+        is SearchResultState.Loading ->
+            ProductsLoadingView(
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+
+        is SearchResultState.Success -> {
+            val products = searchResultsState.results
+            if (products.isEmpty()) {
+                NoProductsFound()
+                return // No need to continue if there are no products
+            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent)
+            ) {
+                items(searchResultsState.results.size) { productIndex ->
+                    val product = products[productIndex]
+
+                    ListItem(
+                        headlineContent = { Text(product.name) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onProductSelected(product.sku)
+                            }
+                    )
+
+                    // Once user reach end of the page, we load next page
+                    if (productIndex == products.lastIndex && !searchResultsState.endReached) {
+                        onLoadMore()
+                    }
+                }
+
+                // Show progress indicator when loading more items
+                if (searchResultsState.isAppending)
+                    item {
+                        ProductsLoadingView(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        )
+                    }
+            }
+        }
+
+        is SearchResultState.Error ->
+            Text(searchResultsState.message)
+    }
+}
+
+/**
+ * Composable to display when loading the data
+ * @param modifier Modifier for the loading view
+ */
+@Composable
+fun ProductsLoadingView(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+/**
+ * Composable to display when no products are found
+ */
+@Composable
+fun NoProductsFound() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(R.string.no_products_found),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/**
+ * Preview of the [HomeScreenContent]
+ */
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
     TechAssessmentTheme {
         HomeScreenContent(
-            searchState = SearchResultState.Loading,
+            searchResultsState = SearchResultState.Success(
+                results = listOf(
+                    Product(name = "Product 1"),
+                    Product(name = "Product 2"),
+                    Product(name = "Product 3")
+                ),
+                endReached = false,
+                isAppending = false
+            ),
             onSearch = {},
             onLoadMore = {},
             onProductSelected = {}
