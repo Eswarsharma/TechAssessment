@@ -2,6 +2,9 @@ package com.code.data.models.response.product
 
 import com.google.gson.annotations.SerializedName
 
+/**
+ * Data class that holds the search results
+ */
 data class ProductList(
     @SerializedName("Brand")
     val brand: String = "",

@@ -1,6 +1,8 @@
 package com.code.data.models.response.product
 
-
+/**
+ * Data class that holds each product details in the search results
+ */
 data class Product(
     val categoryIds: List<String> = emptyList(),
     val categoryName: String = "",

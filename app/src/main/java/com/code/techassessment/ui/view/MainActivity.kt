@@ -23,10 +23,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Composable to host the navigation graph for the app,
+ * and display the home screen as the start destination
+ */
 @Composable
 fun App() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Home) {
+        // This is the current navigation graph for the app.
+        // I would create individual graphs per feature
+        // for example, UserNavGraph, PaymentNavGraph, etc.
+        // This structure also supports navigation between features when needed.
         appNavGraph(navController)
     }
 }

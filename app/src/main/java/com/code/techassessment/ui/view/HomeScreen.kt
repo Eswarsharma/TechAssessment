@@ -11,11 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -24,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,8 +40,11 @@ import com.code.data.models.response.product.Product
 import com.code.techassessment.R
 import com.code.techassessment.navigation.ProductDescription
 import com.code.techassessment.ui.theme.TechAssessmentTheme
+import com.code.techassessment.ui.view.components.ErrorView
+import com.code.techassessment.ui.view.components.LoadingView
+import com.code.techassessment.ui.view.components.ProductCard
 import com.code.techassessment.viewmodel.HomeViewModel
-import com.code.techassessment.viewmodel.SearchResultState
+import com.code.techassessment.viewmodel.SearchResultUiState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -61,15 +64,17 @@ fun HomeScreen(
     navController: NavController = rememberNavController()
 ) {
     val searchResultsState = viewModel.searchResultState.collectAsState()
-    val searchQuery = rememberSaveable { MutableStateFlow("") }
+    val searchQuery = remember { MutableStateFlow("") }
 
     // Since, we don't want to make unnecessary API calls, we debounce the search query
     LaunchedEffect(searchQuery) {
         searchQuery
-            .debounce(500.milliseconds)
+            .debounce(1000.milliseconds)
             .distinctUntilChanged()
             .collect { query ->
-                viewModel.searchProduct(query)
+                if (query.isNotEmpty()) {
+                    viewModel.searchProduct(query)
+                }
             }
     }
 
@@ -77,7 +82,6 @@ fun HomeScreen(
         searchResultsState = searchResultsState.value,
         onSearch = { query ->
             searchQuery.value = query
-            viewModel.searchProduct(query)
         },
         onLoadMore = {
             viewModel.searchProduct(query = searchQuery.value, loadMore = true)
@@ -100,7 +104,7 @@ fun HomeScreen(
  */
 @Composable
 fun HomeScreenContent(
-    searchResultsState: SearchResultState,
+    searchResultsState: SearchResultUiState,
     onSearch: (String) -> Unit,
     onLoadMore: () -> Unit,
     onProductSelected: (productId: String) -> Unit
@@ -197,6 +201,18 @@ fun ProductSearchBar(
                 tint = MaterialTheme.colorScheme.primary
             )
         },
+        trailingIcon = {
+            if (searchText.isNotEmpty()) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_close),
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        onSearchTextChange("")
+                    }
+                )
+            }
+        },
         shape = RoundedCornerShape(5.dp)
     )
 }
@@ -211,17 +227,17 @@ fun ProductSearchBar(
 @Composable
 fun ProductsList(
     onLoadMore: () -> Unit,
-    searchResultsState: SearchResultState,
+    searchResultsState: SearchResultUiState,
     onProductSelected: (productId: String) -> Unit
 ) {
     when (searchResultsState) {
-        is SearchResultState.Loading ->
-            ProductsLoadingView(
+        is SearchResultUiState.Loading ->
+            LoadingView(
                 modifier = Modifier
                     .fillMaxSize()
             )
 
-        is SearchResultState.Success -> {
+        is SearchResultUiState.Success -> {
             val products = searchResultsState.results
             if (products.isEmpty()) {
                 NoProductsFound()
@@ -230,18 +246,18 @@ fun ProductsList(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Transparent)
+                    .background(Color.Transparent),
+                state = rememberLazyListState()
             ) {
                 items(searchResultsState.results.size) { productIndex ->
                     val product = products[productIndex]
-
-                    ListItem(
-                        headlineContent = { Text(product.name) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onProductSelected(product.sku)
-                            }
+                    ProductCard(
+                        imageUrl = product.highResImage,
+                        name = product.name,
+                        price = product.salePrice.toString(),
+                        onProductSelected = {
+                            onProductSelected(product.sku)
+                        }
                     )
 
                     // Once user reach end of the page, we load next page
@@ -253,7 +269,7 @@ fun ProductsList(
                 // Show progress indicator when loading more items
                 if (searchResultsState.isAppending)
                     item {
-                        ProductsLoadingView(
+                        LoadingView(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
@@ -262,24 +278,7 @@ fun ProductsList(
             }
         }
 
-        is SearchResultState.Error ->
-            Text(searchResultsState.message)
-    }
-}
-
-/**
- * Composable to display when loading the data
- * @param modifier Modifier for the loading view
- */
-@Composable
-fun ProductsLoadingView(
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
+        is SearchResultUiState.Error -> ErrorView(message = searchResultsState.message)
     }
 }
 
@@ -310,7 +309,7 @@ fun NoProductsFound() {
 fun HomeScreenPreview() {
     TechAssessmentTheme {
         HomeScreenContent(
-            searchResultsState = SearchResultState.Success(
+            searchResultsState = SearchResultUiState.Success(
                 results = listOf(
                     Product(name = "Product 1"),
                     Product(name = "Product 2"),

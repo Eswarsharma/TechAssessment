@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TechAssessment</string>
+    <string name="search_best_buy">Rechercher Best Buy</string>
+    <string name="welcome">Bienvenue chez Best Buy</string>
+    <string name="no_products_found">Aucun produit trouvé</string>
+    <string name="add_to_cart">Ajouter au panier</string>
+    <string name="added_to_cart">Ajouté au panier</string>
+</resources>

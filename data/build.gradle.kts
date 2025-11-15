@@ -49,4 +49,6 @@ dependencies {
     implementation(libs.bundles.retrofit)
     implementation(libs.bundles.okhttp)
     testImplementation(libs.koin.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.coroutine.test)
 }

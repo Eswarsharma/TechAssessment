@@ -18,6 +18,8 @@ retrofit = "3.0.0"
 okhttp = "5.3.0"
 glide = "5.0.5"
 glide-compose = "1.0.0-beta08"
+mockk = "1.14.6"
+coroutine-test = "1.10.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +60,12 @@ okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-i
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
 glide-compose = { group = "com.github.bumptech.glide", name = "compose", version.ref = "glide-compose" }
+
+#mockk
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+
+#coroutine-test
+coroutine-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutine-test" }
 
 [bundles]
 koin = [

@@ -14,6 +14,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+/**
+ * Koin module for network operations
+ */
 val networkModule = module {
     // OKHttp
     single {
@@ -69,6 +72,9 @@ val networkModule = module {
     }
 }
 
+/**
+ * Koin module for repositories
+ */
 val repositoryModules = module {
     single {
         ProductRepository(get())
